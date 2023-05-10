@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
     # Third-party apps
     'rest_framework',
+    'drf_yasg',
 
     # Local apps
     'table_builder.apps.tables',

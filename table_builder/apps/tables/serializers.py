@@ -10,4 +10,8 @@ class TableSerializer(serializers.ModelSerializer):
 
 
 class TableSchemaSerializer(serializers.Serializer):
-    pass
+    schema = serializers.JSONField(required=True)
+
+
+class TableDataSerializer(serializers.Serializer):
+    data = serializers.JSONField(required=True)

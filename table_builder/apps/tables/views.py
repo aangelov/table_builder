@@ -3,24 +3,28 @@ from django.db import connection
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from drf_yasg.utils import swagger_auto_schema
 
-from .models import Table
-from .serializers import TableSerializer
+from table_builder.apps.tables.models import Table
+from table_builder.apps.tables import serializers
 
 
 class TableViewSet(viewsets.ModelViewSet):
     queryset = Table.objects.all()
-    serializer_class = TableSerializer
+    serializer_class = serializers.TableSerializer
 
+    @swagger_auto_schema(
+            request_body=serializers.TableSchemaSerializer,
+            tags=['Update schema'],
+    )
     @action(detail=True, methods=['put'])
     def update_schema(self, request, pk=None):
         table = self.get_object()
 
-        schema = request.data.get('schema')
-        if not schema:
-            return Response({'error': 'Missing schema'}, status=400)
+        serializer = serializers.TableSchemaSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        table.schema = schema
+        table.schema = serializer.data.get('schema')
         table.save()
 
         # drop old table and create a new one
@@ -30,20 +34,26 @@ class TableViewSet(viewsets.ModelViewSet):
 
         return Response({'success': 'Table schema updated'})
 
+    @swagger_auto_schema(
+            request_body=serializers.TableDataSerializer,
+            tags=['Add rows to table'],
+    )
     @action(detail=True, methods=['post'])
     def add_row(self, request, pk=None):
         table = self.get_object()
 
-        data = request.data.get('data')
-        if not data:
-            return Response({'error': 'Missing data'}, status=400)
+        serializer = serializers.TableDataSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
         model_class = table.create_model()
-        row = model_class(**data)
+        row = model_class(**serializer.data.get('data'))
         row.save()
 
         return Response({'success': 'Row added'}, status=201)
 
+    @swagger_auto_schema(
+            tags=['Get table rows'],
+    )
     @action(detail=True, methods=['get'])
     def get_rows(self, request, pk=None):
         table = self.get_object()
